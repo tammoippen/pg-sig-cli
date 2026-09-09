@@ -1,0 +1,28 @@
+sqlsig
+Copyright (c) 2026 Tammo Ippen
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License, version 3, as published by
+the Free Software Foundation. See the LICENSE file for the full text.
+
+--------------------------------------------------------------------------------
+Third-party components
+--------------------------------------------------------------------------------
+
+This program links against the `windmill-parser` and `windmill-parser-sql`
+crates from Windmill:
+
+    Copyright (c) 2022 Windmill Labs, Inc
+    https://github.com/windmill-labs/windmill
+    (paths `backend/parsers/windmill-parser` and
+     `backend/parsers/windmill-parser-sql`)
+    Licensed under the GNU Affero General Public License, version 3.
+
+Windmill's top-level LICENSE states that "the files under backend/ are AGPLv3
+Licensed, except any snippets of code under the compile flag 'enterprise'".
+The two parser crates used here contain no `enterprise`-gated code, so they are
+AGPLv3 in full. Because sqlsig links them, sqlsig as a whole is distributed
+under the AGPLv3 as well.
+
+These crates are consumed as pinned git dependencies rather than being copied
+into this repository; see Cargo.toml for the pinned revision.

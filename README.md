@@ -6,7 +6,7 @@ signature Windmill would infer for it, as JSON.
 
 ## Layout
 
-A single crate: `Cargo.toml` and `src/main.rs`.
+A single crate: `Cargo.toml` and `src/main.rs`, plus `LICENSE` and `NOTICE`.
 
 `windmill-parser` and `windmill-parser-sql` come straight from
 https://github.com/windmill-labs/windmill as pinned git dependencies
@@ -80,3 +80,18 @@ annotation present), `placeholder_occurrences` (each real `$N` occurrence
 with its byte range — what Windmill's executor uses to renumber sparse
 placeholders), `db_resource` (`-- database <path>` header, if any), and
 `statement_count` (top-level `;` splitting via `parse_sql_blocks`).
+
+## License
+
+`sqlsig` is licensed under the **GNU Affero General Public License v3.0 only**
+(`AGPL-3.0-only`) — see [LICENSE](LICENSE).
+
+This is not a free choice: `sqlsig` links `windmill-parser` and
+`windmill-parser-sql`, which live under `backend/` in the Windmill repository
+and are AGPLv3 (Copyright (c) 2022 Windmill Labs, Inc). The AGPL's copyleft
+therefore extends to this program as a whole. Note in particular AGPL §13: if
+you run a modified version of this code to offer a network service, you must
+offer its source to the users of that service.
+
+See [NOTICE](NOTICE) for third-party attribution.
+

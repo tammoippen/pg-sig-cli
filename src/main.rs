@@ -1,3 +1,11 @@
+// sqlsig — Copyright (c) 2026 Tammo Ippen
+//
+// This program is free software: you can redistribute it and/or modify it
+// under the terms of the GNU Affero General Public License, version 3, as
+// published by the Free Software Foundation. It is distributed WITHOUT ANY
+// WARRANTY; see the LICENSE file for the full text, and NOTICE for the
+// third-party components it links (Windmill's AGPLv3 parser crates).
+
 //! sqlsig — parse a SQL script with windmill-parser-sql and print the
 //! argument signature Windmill would infer for it, as JSON.
 //!

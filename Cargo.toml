@@ -2,6 +2,19 @@
 name = "sqlsig"
 version = "0.1.0"
 edition = "2021"
+description = "Parse a SQL script with Windmill's own parser and print the argument signature Windmill would infer for it, as JSON"
+authors = ["Tammo Ippen <tammo.ippen@posteo.de>"]
+repository = "https://github.com/tammoippen/pg-sig-cli"
+readme = "README.md"
+keywords = ["sql", "windmill", "parser", "cli"]
+categories = ["command-line-utilities"]
+
+# sqlsig links windmill-parser-sql, which is AGPLv3 (see NOTICE), so the
+# combined work is AGPLv3 as well.
+license = "AGPL-3.0-only"
+
+# Git dependencies cannot be published to crates.io.
+publish = false
 
 # Windmill's parser crates are not published on crates.io, so they are pulled
 # straight from the upstream repository, pinned to a commit. Cargo resolves
