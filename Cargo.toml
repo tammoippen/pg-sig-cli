@@ -1,22 +1,16 @@
-[workspace]
-resolver = "2"
-members = ["cli", "vendor/windmill-parser", "vendor/windmill-parser-sql"]
-
-# The vendored windmill crates use `version.workspace = true` etc., so we
-# provide the same keys their upstream workspace (windmill/backend/Cargo.toml
-# @ 8aa8b7e) defines.
-[workspace.package]
-version = "1.808.0"
+[package]
+name = "sqlsig"
+version = "0.1.0"
 edition = "2021"
-authors = ["Windmill Labs (vendored parser crates)"]
 
-# Versions mirror windmill/backend/Cargo.toml @ 8aa8b7e.
-[workspace.dependencies]
-windmill-parser = { path = "vendor/windmill-parser" }
-serde = "^1"
-serde_json = { version = "^1.0.151", features = ["preserve_order", "raw_value"] }
+# Windmill's parser crates are not published on crates.io, so they are pulled
+# straight from the upstream repository, pinned to a commit. Cargo resolves
+# them out of windmill's own `backend/` workspace
+# (paths `backend/parsers/windmill-parser{,-sql}`). They remain under
+# Windmill's upstream license (AGPLv3 for the backend).
+[dependencies]
+windmill-parser = { git = "https://github.com/windmill-labs/windmill", rev = "8aa8b7ee6c23f859f169637c0bfd3f8d964509e9" }
+windmill-parser-sql = { git = "https://github.com/windmill-labs/windmill", rev = "8aa8b7ee6c23f859f169637c0bfd3f8d964509e9" }
+
 anyhow = "^1"
-regex = "^1"
-regex-lite = "0.1.6"
-lazy_static = "1.4.0"
-convert_case = "0.6.0"
+serde_json = { version = "^1.0.151", features = ["preserve_order", "raw_value"] }

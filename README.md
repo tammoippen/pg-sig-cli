@@ -6,16 +6,19 @@ signature Windmill would infer for it, as JSON.
 
 ## Layout
 
-- `cli/` — the CLI binary (`sqlsig`)
-- `vendor/windmill-parser`, `vendor/windmill-parser-sql` — vendored verbatim
-  from https://github.com/windmill-labs/windmill at commit
-  `8aa8b7ee6c23f859f169637c0bfd3f8d964509e9`
-  (paths `backend/parsers/windmill-parser{,-sql}`). These crates are not
-  published on crates.io, which is why they are vendored; the root
-  `Cargo.toml` supplies the `[workspace.package]` / `[workspace.dependencies]`
-  keys their manifests reference. The vendored code remains under Windmill's
-  upstream license (AGPLv3 for the backend) — check the upstream repo before
-  redistributing.
+A single crate: `Cargo.toml` and `src/main.rs`.
+
+`windmill-parser` and `windmill-parser-sql` come straight from
+https://github.com/windmill-labs/windmill as pinned git dependencies
+(rev `8aa8b7ee6c23f859f169637c0bfd3f8d964509e9`, paths
+`backend/parsers/windmill-parser{,-sql}`). They are not published on
+crates.io, so a git dependency is how they are consumed; Cargo resolves them
+out of windmill's own `backend/` workspace, so none of their manifest keys
+need mirroring here. They remain under Windmill's upstream license (AGPLv3
+for the backend) — check the upstream repo before redistributing.
+
+To move to a newer upstream commit, change the two `rev =` values in
+`Cargo.toml` and run `cargo update`.
 
 ## Build
 
