@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = ["cli", "vendor/windmill-parser", "vendor/windmill-parser-sql"]
+
+# The vendored windmill crates use `version.workspace = true` etc., so we
+# provide the same keys their upstream workspace (windmill/backend/Cargo.toml
+# @ 8aa8b7e) defines.
+[workspace.package]
+version = "1.808.0"
+edition = "2021"
+authors = ["Windmill Labs (vendored parser crates)"]
+
+# Versions mirror windmill/backend/Cargo.toml @ 8aa8b7e.
+[workspace.dependencies]
+windmill-parser = { path = "vendor/windmill-parser" }
+serde = "^1"
+serde_json = { version = "^1.0.151", features = ["preserve_order", "raw_value"] }
+anyhow = "^1"
+regex = "^1"
+regex-lite = "0.1.6"
+lazy_static = "1.4.0"
+convert_case = "0.6.0"
