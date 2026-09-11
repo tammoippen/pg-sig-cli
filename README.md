@@ -99,6 +99,16 @@ scripts run fine against a plain Postgres client but fail inside Windmill.
   implicit `text` cast (`uuid`, `jsonb`, enums, arrays, …) — even though the
   same query works fine when a driver lets Postgres infer the parameter type
   from context.
+- **A space before `[]`** (`$N::type []` or `-- $N name (type [])`) — real
+  Postgres tokenizes the type name and `[]` independently, so this is
+  identical to `::type[]` there. Windmill's regex-based parser requires the
+  brackets to directly abut the type name, though: an inline cast silently
+  loses its array marker and binds as a scalar (without setting
+  `otyp_inferred`, so the check above can't catch it), and a declaration
+  comment fails to match at all, reverting the whole arg to an unnamed,
+  untyped `$N`. This is exactly what an sqlfluff auto-format pass has been
+  observed to introduce, turning a working array param into one that fails
+  at `PREPARE` time with e.g. `cannot cast type integer to integer[]`.
 
 ```
 sqlsig --validate "SELECT * FROM users WHERE id = \$1"

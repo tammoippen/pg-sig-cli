@@ -98,6 +98,31 @@ lazy_static::lazy_static! {
     // it can false-positive (e.g. inside a string literal); it's a
     // heuristic warning, not a hard error.
     static ref RE_NAMED_PARAM: Regex = Regex::new(r#"(^|[^:]):([A-Za-z_]\w*)"#).unwrap();
+
+    // `$N::type []` — an inline cast whose array brackets are separated
+    // from the type name by whitespace. Real Postgres tokenizes `type` and
+    // `[]` independently, so `::int []` and `::int[]` are equivalent there.
+    // windmill-parser-sql's inline-cast regex
+    // (`\$(\d+)(?:::(\w+(?:\[\])?))?`) requires the `[]` to *directly*
+    // abut the type name, though: with the space present it captures only
+    // the bare scalar type name and silently drops the array marker — and
+    // crucially does *not* set `otyp_inferred`, so check 4 below (which
+    // only looks at that flag) can't catch it. This is the exact failure
+    // mode reported from an sqlfluff auto-format pass that inserted a space
+    // before `[]`, silently downgrading e.g. `vector[]`/`int[]` params to a
+    // scalar type and then failing at PREPARE time with something like
+    // `cannot cast type integer to integer[]`.
+    static ref RE_CAST_ARRAY_SPACE: Regex = Regex::new(r#"\$(\d+)::[A-Za-z_]\w*\s+\[\s*\]"#).unwrap();
+
+    // Same failure mode inside a `-- $N name (type [])` declaration
+    // comment: `RE_ARG_PGSQL`'s type group (`[A-Za-z0-9_\[\]]+`) excludes
+    // whitespace, so a space before `[]` here doesn't just drop the array
+    // marker — it makes the *whole* declaration line fail to match, and the
+    // arg silently reverts to an unnamed, untyped `$N` (still caught by
+    // check 4, but flagged here too for a message that points at the real
+    // root cause).
+    static ref RE_ANNOTATION_ARRAY_SPACE: Regex =
+        Regex::new(r#"(?m)^-- \$(\d+) \w+ \([A-Za-z0-9_]+\s+\[\s*\]\)"#).unwrap();
 }
 
 /// Checks that need no database connection: named-parameter usage the `pg`
@@ -187,6 +212,36 @@ pub fn static_checks(code: &str, sig: &MainArgSignature) -> Vec<Issue> {
                 ),
             ));
         }
+    }
+
+    // 5. `$N::type []` / `-- $N name (type [])` — array brackets separated
+    //    from the type name by whitespace. Valid, semantically identical SQL
+    //    against real Postgres, but windmill-parser-sql's regexes require
+    //    the `[]` to directly abut the type name, so the array marker is
+    //    silently lost (inline cast) or the whole declaration goes
+    //    unrecognized (comment annotation) — exactly the bug an sqlfluff
+    //    auto-format pass introduced by inserting a space before `[]`.
+    for cap in RE_CAST_ARRAY_SPACE.captures_iter(code) {
+        let idx = cap.get(1).unwrap().as_str();
+        issues.push(Issue::new(
+            Severity::Error,
+            "static",
+            None,
+            format!(
+                "`${idx}::type []` mit Leerzeichen vor `[]` gefunden — gegen echtes Postgres funktioniert das identisch zu `${idx}::type[]`, aber Windmill's Parser erkennt das Array-Suffix dann nicht mehr und bindet `${idx}` als Skalar statt als Array. Leerzeichen vor den Klammern entfernen (`${idx}::type[]`)."
+            ),
+        ));
+    }
+    for cap in RE_ANNOTATION_ARRAY_SPACE.captures_iter(code) {
+        let idx = cap.get(1).unwrap().as_str();
+        issues.push(Issue::new(
+            Severity::Error,
+            "static",
+            None,
+            format!(
+                "`-- ${idx} name (type [])`-Annotation mit Leerzeichen vor `[]` gefunden — dadurch erkennt Windmill's Parser die gesamte Deklarationszeile nicht mehr; `${idx}` f\u{e4}llt komplett auf einen unbenannten, ungetypten Parameter zur\u{fc}ck. Leerzeichen vor den Klammern entfernen (`(type[])`)."
+            ),
+        ));
     }
 
     issues
