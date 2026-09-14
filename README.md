@@ -81,6 +81,72 @@ with its byte range — what Windmill's executor uses to renumber sparse
 placeholders), `db_resource` (`-- database <path>` header, if any), and
 `statement_count` (top-level `;` splitting via `parse_sql_blocks`).
 
+## Validating SQL for Windmill (`--validate`)
+
+Windmill's pg executor doesn't just forward your SQL verbatim, so some
+scripts run fine against a plain Postgres client but fail inside Windmill.
+`--validate` (currently `pg`-dialect only) catches the common causes:
+
+- **`:name`-style bind params** — Windmill's `pg` dialect only recognizes
+  positional `$N` placeholders; a `:name` param is passed through as literal
+  SQL and Postgres rejects it.
+- **Stale/duplicate `-- $N` annotations** — a declaration referencing an
+  index no `$N` placeholder actually uses (typo), or the same index declared
+  twice (Windmill keeps both, conflicting, arg entries).
+- **Un-annotated, uncast `$N`** — falls back to `text`
+  (`otyp_inferred: true`). Windmill sends it as an explicit `text` parameter,
+  which fails at `PREPARE` time against anything that doesn't accept an
+  implicit `text` cast (`uuid`, `jsonb`, enums, arrays, …) — even though the
+  same query works fine when a driver lets Postgres infer the parameter type
+  from context.
+- **A space before `[]`** (`$N::type []` or `-- $N name (type [])`) — real
+  Postgres tokenizes the type name and `[]` independently, so this is
+  identical to `::type[]` there. Windmill's regex-based parser requires the
+  brackets to directly abut the type name, though: an inline cast silently
+  loses its array marker and binds as a scalar (without setting
+  `otyp_inferred`, so the check above can't catch it), and a declaration
+  comment fails to match at all, reverting the whole arg to an unnamed,
+  untyped `$N`. This is exactly what an sqlfluff auto-format pass has been
+  observed to introduce, turning a working array param into one that fails
+  at `PREPARE` time with e.g. `cannot cast type integer to integer[]`.
+
+```
+sqlsig --validate "SELECT * FROM users WHERE id = \$1"
+```
+
+Pass `--conn <CONNINFO>` (libpq keyword/value string or a `postgres://` URL;
+falls back to `$DATABASE_URL`) to additionally reproduce Windmill's exact
+per-statement dispatch against a real database: placeholders are renumbered
+the same way, then `PREPARE`d with the same declared/inferred types
+Windmill would bind. This is **read-only** — `PREPARE` alone never executes
+the statement, so it's safe even for `INSERT`/`UPDATE`/`DELETE`/DDL.
+
+```
+sqlsig --validate --conn "postgres://user:pass@host/db" -f query.sql
+```
+
+Output gets an extra `validation` field:
+
+```json
+{
+  "validation": {
+    "live_checked": true,
+    "issues": [
+      {
+        "severity": "error",
+        "source": "live",
+        "statement": 1,
+        "message": "PREPARE fehlgeschlagen: db error: ERROR: operator does not exist: uuid = text\n..."
+      }
+    ]
+  }
+}
+```
+
+The process exits non-zero if any `error`-severity issue was found, so
+`--validate` is usable as a CI check. Only `NoTls` connections are currently
+supported (no TLS-required hosts yet).
+
 ## License
 
 `sqlsig` is licensed under the **GNU Affero General Public License v3.0 only**

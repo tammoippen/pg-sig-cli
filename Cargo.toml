@@ -26,4 +26,18 @@ windmill-parser = { git = "https://github.com/windmill-labs/windmill", rev = "8a
 windmill-parser-sql = { git = "https://github.com/windmill-labs/windmill", rev = "8aa8b7ee6c23f859f169637c0bfd3f8d964509e9" }
 
 anyhow = "^1"
-serde_json = { version = "^1.0.151", features = ["preserve_order", "raw_value"] }
+serde_json = { version = "^1.0.151", features = [
+    "preserve_order",
+    "raw_value",
+] }
+regex = "^1"
+lazy_static = "^1"
+
+# Used by `--validate` to actually connect to a Postgres database and
+# PREPARE the (renumbered) statements Windmill would send, so that type /
+# operator mismatches (e.g. an un-annotated `$N` falling back to `text`
+# against a `uuid`/`jsonb`/enum column) and syntax errors surface exactly as
+# they would for a real Windmill job — without executing or mutating
+# anything, since PREPARE alone never runs the statement.
+tokio = { version = "^1", features = ["full"] }
+tokio-postgres = "^0.7"
